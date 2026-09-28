@@ -78,7 +78,6 @@
   "weapon_hand_wrong": "手に持っている武器が違います",
   "open_player_inventory": "プレイヤーインベントリを開く~",
   "open_secondary_inventory": "サブインベントリを開く~",
-  "disable_hotbar": "インベントリホットバーを表示~",
   "reload_weapon": "武器をリロード~",
   "use_hotbar": "ホットバー %s のアイテムを使用~",
   "no_durability": "%s の耐久度が尽きました",

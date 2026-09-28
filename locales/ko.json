@@ -73,7 +73,6 @@
   "weapon_hand_wrong": "손에 잘못된 무기",
   "open_player_inventory": "플레이어 인벤토리를 엽니다~",
   "open_secondary_inventory": "2차 인벤토리 열기~",
-  "disable_hotbar": "인벤토리 핫바 표시~",
   "reload_weapon": "무기 재장전~",
   "use_hotbar": "핫바 항목 %s 사용~",
   "no_durability": "%s 내구도가 고갈되었습니다",

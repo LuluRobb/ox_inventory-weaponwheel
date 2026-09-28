@@ -78,7 +78,6 @@
   "weapon_hand_wrong": "Hibás fegyver a kézben",
   "open_player_inventory": "Játékos inventory megnyitása~",
   "open_secondary_inventory": "Másodlagos inventory megnyitása~",
-  "disable_hotbar": "Inventory hotbar megjelenítése~",
   "reload_weapon": "Fegyver újratöltés~",
   "use_hotbar": "Hotbar item használata %s~",
   "no_durability": "%s tartósság kimerült",

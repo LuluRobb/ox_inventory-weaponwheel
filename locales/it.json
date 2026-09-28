@@ -75,7 +75,6 @@
   "weapon_hand_wrong": "Arma sbagliata in mano",
   "open_player_inventory": "Apertura inventario giocatore~",
   "open_secondary_inventory": "Apertura inventario secondario~",
-  "disable_hotbar": "Visualizza la selezione rapida dell'inventario~",
   "reload_weapon": "Ricarica arma~",
   "use_hotbar": "Usa oggetto dalla selezione rapida %s~",
   "no_durability": "Oggetto usurato",

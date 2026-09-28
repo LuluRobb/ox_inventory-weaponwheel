@@ -78,7 +78,6 @@
   "weapon_hand_wrong": "Vous n'avez pas la bonne arme en main",
   "open_player_inventory": "Ouverture de l’inventaire du joueur~",
   "open_secondary_inventory": "Ouverture de l’inventaire secondaire~",
-  "disable_hotbar": "Afficher les raccourcis de l’inventaire~",
   "reload_weapon": "Recharger l’arme~",
   "use_hotbar": "Utiliser l’objet du racccourci %s~",
   "no_durability": "La durabilité de l'item a expiré",

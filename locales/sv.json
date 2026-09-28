@@ -74,7 +74,6 @@
   "weapon_hand_wrong": "Fel vapen i handen",
   "open_player_inventory": "Öppna personens inventory~",
   "open_secondary_inventory": "Öppna andrahands inventory~",
-  "disable_hotbar": "Visa inventory hotbar~",
   "reload_weapon": "Ladda om vapnet~",
   "use_hotbar": "Använd hotbar item %s~",
   "no_durability": "%s Hållbarheten är slut",

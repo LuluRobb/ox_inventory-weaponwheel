@@ -78,7 +78,6 @@
   "weapon_hand_wrong": "手持錯誤的武器",
   "open_player_inventory": "打開背包~",
   "open_secondary_inventory": "打開手套箱~",
-  "disable_hotbar": "顯示物品快捷欄~",
   "reload_weapon": "武器裝填~",
   "use_hotbar": "使用快捷欄物品 %s~",
   "no_durability": "物品耐久度已耗盡",

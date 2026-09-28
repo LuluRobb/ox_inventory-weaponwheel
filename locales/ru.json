@@ -75,7 +75,6 @@
   "weapon_hand_wrong": "Неверное оружие в руке",
   "open_player_inventory": "Открыть инвентарь игрока~",
   "open_secondary_inventory": "Открыть вторичный инвентарь~",
-  "disable_hotbar": "Отобразить горячую панель~",
   "reload_weapon": "Перезарядить оружие~",
   "use_hotbar": "Использовать предмет горячей панели %s~",
   "no_durability": "Исчерпана прочность предмета",

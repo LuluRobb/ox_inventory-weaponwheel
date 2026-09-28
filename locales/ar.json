@@ -75,7 +75,6 @@
   "weapon_hand_wrong": "سلاح خاطئ في متناول اليد",
   "open_player_inventory": "فتح مخزون اللاعب~",
   "open_secondary_inventory": "فتح الحقيبة الثانوية~",
-  "disable_hotbar": "عرض المخزون HOTBAR.~",
   "reload_weapon": "تحديث سلاح~",
   "use_hotbar": "استخدام عنصر هوتبار بند %s~",
   "no_durability": "%s مكسور",

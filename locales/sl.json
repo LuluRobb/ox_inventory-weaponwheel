@@ -75,7 +75,6 @@
   "weapon_hand_wrong": "Napačno orožje v roki",
   "open_player_inventory": "Odpri inventar igralca~",
   "open_secondary_inventory": "Odpri sekundarni inventar~",
-  "disable_hotbar": "Prikaži vročo vrstico inventarja~",
   "reload_weapon": "Znova naloži orožje~",
   "use_hotbar": "Uporabi element vroče vrstice %s~",
   "no_durability": "Trajnost artikla je izčrpana",

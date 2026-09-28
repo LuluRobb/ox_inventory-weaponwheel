@@ -78,7 +78,6 @@
   "weapon_hand_wrong": "拿错了武器",
   "open_player_inventory": "打开玩家物品栏~",
   "open_secondary_inventory": "打开二级物品栏~",
-  "disable_hotbar": "显示物品栏快捷栏~",
   "reload_weapon": "重装武器~",
   "use_hotbar": "使用快捷栏 %s~",
   "no_durability": "%s 耐久已耗尽",

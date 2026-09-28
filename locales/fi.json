@@ -78,7 +78,6 @@
   "weapon_hand_wrong": "Väärä ase kädessä",
   "open_player_inventory": "Avaa pelaajan taskut~",
   "open_secondary_inventory": "Avaa varasto~",
-  "disable_hotbar": "Näytä pikavalikko~",
   "reload_weapon": "Lataa ase~",
   "use_hotbar": "Käytä pikavalikon tavara %s~",
   "no_durability": "%s on hajonnut",

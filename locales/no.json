@@ -78,7 +78,6 @@
     "weapon_hand_wrong": "Feil våpen i hånden",
     "open_player_inventory": "Åpne spillers inventar~",
     "open_secondary_inventory": "Åpne sekundært inventar~",
-    "disable_hotbar": "Vis inventar-hotbar~",
     "reload_weapon": "Lad våpenet~",
     "use_hotbar": "Bruk hotbar-objekt %s~",
     "no_durability": "%s holdbarhet er brukt opp",
