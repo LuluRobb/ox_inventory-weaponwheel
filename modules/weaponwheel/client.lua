@@ -67,7 +67,13 @@ local BLOCKED_CONTROLS = {
 }
 
 local isOpen = false
-local hovered = FIST
+
+-- Counts every open, ends the loop and a pending equip of an older session
+local session = 0
+
+-- Selected slot, nil keeps the current weapon on release
+---@type number?
+local hovered
 
 -- Slots that can be selected, the fist always can
 local available = { [FIST] = true }
@@ -79,6 +85,7 @@ local stickX, stickY = 0.0, 0.0
 ---@field canOpen fun(): boolean
 ---@field shouldClose fun(): boolean?
 ---@field getCurrentWeapon fun(): table?
+---@field isBusy fun(): boolean? an item use or weapon action is still running
 ---@field useSlot fun(slot: number)
 ---@field disarm fun()
 
@@ -105,14 +112,15 @@ local function getVehicleRule()
 
 	if not vehicle then return end
 
-	local class = GetVehicleClass(vehicle)
+	-- Model type instead of vehicle class, some bikes use other classes (e.g. policeb = emergency)
+	local model = GetEntityModel(vehicle)
 	local isDriver = cache.seat == -1
 
-	if class == 8 or class == 13 then
+	if IsThisModelABike(model) or IsThisModelABicycle(model) then
 		return isDriver and VEHICLE_WEAPONS.bikeDriver or VEHICLE_WEAPONS.bikePassenger
 	end
 
-	if isDriver and (class == 15 or class == 16) then
+	if isDriver and (IsThisModelAHeli(model) or IsThisModelAPlane(model)) then
 		return VEHICLE_WEAPONS.pilot
 	end
 
@@ -215,29 +223,29 @@ local function nearestAvailable(deg)
 	return best
 end
 
--- Weapon slots and whether each can be selected right now, index = slot 1-5
----@return boolean[] weapons, boolean[] blocked
-local function updateAvailable()
+-- Vehicle blocks and clip sizes of slots 1-5, also updates which slots can be selected
+---@return boolean[] blocked, number[] capacity
+local function updateSlots()
 	local rule = getVehicleRule()
-	local weapons, blocked = {}, {}
+	local blocked, capacity = {}, {}
 
 	for slot = 1, 5 do
-		weapons[slot] = isWeaponSlot(slot)
-		blocked[slot] = weapons[slot] and isBlockedInVehicle(slot, rule)
-		available[slot] = weapons[slot] and not blocked[slot]
+		local weapon = isWeaponSlot(slot)
+
+		blocked[slot] = weapon and isBlockedInVehicle(slot, rule)
+		available[slot] = weapon and not blocked[slot]
+		capacity[slot] = weapon and getClipCapacity(slot) or 0
 	end
 
-	return weapons, blocked
+	return blocked, capacity
 end
 
--- Unavailable targets snap to the nearest available segment
----@param slot number
+---@param slot number? nil clears the selection
 local function setHover(slot)
-	if not available[slot] then slot = nearestAvailable(SLOT_ANGLE[slot]) end
 	if slot == hovered then return end
 
 	hovered = slot
-	SendNUIMessage({ action = 'weaponWheelHover', data = slot })
+	SendNUIMessage({ action = 'weaponWheelHover', data = slot or -1 })
 end
 
 local function close()
@@ -246,6 +254,28 @@ local function close()
 	isOpen = false
 	SendNUIMessage({ action = 'closeWeaponWheel' })
 end
+
+-- Inventory or seat changed while the wheel is open
+local function refresh()
+	local blocked, capacity = updateSlots()
+
+	SendNUIMessage({ action = 'weaponWheelUpdate', data = { blocked = blocked, capacity = capacity } })
+
+	-- Selected slot got emptied or blocked, keep the current weapon unless the player picks again
+	if hovered and not available[hovered] then
+		stickX, stickY = 0.0, 0.0
+		setHover(nil)
+	end
+end
+
+AddEventHandler('ox_inventory:updateInventory', function()
+	if isOpen then refresh() end
+end)
+
+-- Weapons got disabled (e.g. by another resource), close without equipping
+AddStateBagChangeHandler('canUseWeapons', ('player:%s'):format(cache.serverId), function(_, _, value)
+	if not value then close() end
+end)
 
 -- Keeps ESC from reaching the pause menu until it is released
 local function swallowPause()
@@ -261,8 +291,6 @@ end
 
 ---@param slot number
 local function equipSlot(slot)
-	if not ctx then return end
-
 	if slot == FIST then return ctx.disarm() end
 
 	-- Inventory or seat changed since the wheel updated, keep the current weapon
@@ -275,28 +303,30 @@ local function equipSlot(slot)
 end
 
 function WeaponWheel.open()
-	if isOpen or not ctx or not ctx.canOpen() then return end
+	if not ctx then return end
+
+	-- Pressed while still open, the release got lost (e.g. window focus lost while holding the key), start over
+	close()
+
+	if not ctx.canOpen() then return end
 
 	local weapon = ctx.getCurrentWeapon()
-	local weapons, blocked = updateAvailable()
-	local capacity = {}
+	local equipped = weapon and weapon.slot or FIST
+	local blocked, capacity = updateSlots()
 
-	for slot = 1, 5 do
-		capacity[slot] = weapons[slot] and getClipCapacity(slot) or 0
-	end
-
-	local equipped = weapon?.slot
-
+	session += 1
 	isOpen = true
-	hovered = equipped and available[equipped] and equipped or nearestAvailable(SLOT_ANGLE[equipped or FIST])
 	stickX, stickY = 0.0, 0.0
+
+	-- Preselects the current weapon, or nothing when it is not on the wheel (slot 6+) or blocked on this seat,
+	-- so a quick tap keeps it
+	hovered = available[equipped] and equipped or nil
 
 	SendNUIMessage({
 		action = 'openWeaponWheel',
 		data = {
 			equipped = equipped,
-			hovered = hovered,
-			weapons = weapons,
+			hovered = hovered or -1,
 			blocked = blocked,
 			capacity = capacity,
 			-- Live ammo of the equipped weapon, the slot metadata is only synced periodically
@@ -304,11 +334,13 @@ function WeaponWheel.open()
 		}
 	})
 
+	local current = session
+
 	CreateThread(function()
 		local playerId = cache.playerId
 		local vehicle, seat = cache.vehicle, cache.seat
 
-		while isOpen do
+		while isOpen and session == current do
 			if ctx.shouldClose() then
 				close()
 				break
@@ -317,14 +349,7 @@ function WeaponWheel.open()
 			-- Entering, leaving or switching seats changes which weapons can be used
 			if cache.vehicle ~= vehicle or cache.seat ~= seat then
 				vehicle, seat = cache.vehicle, cache.seat
-				local _, nowBlocked = updateAvailable()
-
-				SendNUIMessage({ action = 'weaponWheelBlocked', data = nowBlocked })
-
-				if not available[hovered] then
-					stickX, stickY = 0.0, 0.0
-					setHover(hovered)
-				end
+				refresh()
 			end
 
 			for i = 1, #BLOCKED_CONTROLS do
@@ -368,17 +393,31 @@ function WeaponWheel.open()
 	end)
 end
 
--- Called when the wheel key is released, equips the hovered slot
+-- Called when the wheel key is released, equips the selected slot
 function WeaponWheel.release()
 	if not isOpen then return end
 
+	local slot, current = hovered, session
+
 	close()
-	equipSlot(hovered)
+
+	if not slot then return end
+
+	-- A running item use (e.g. an automatic reload) would reject the equip, wait for it instead
+	CreateThread(function()
+		local timeout = GetGameTimer() + 1500
+
+		while ctx.isBusy() and GetGameTimer() < timeout do Wait(50) end
+
+		-- Skipped when the wheel was opened again in the meantime
+		if session == current and not ctx.isBusy() then equipSlot(slot) end
+	end)
 end
 
 ---@param slot number
 function WeaponWheel.hover(slot)
-	if not isOpen then return end
+	-- Keys on empty, non-weapon or blocked slots do nothing, like the hotkeys with the wheel closed
+	if not isOpen or not available[slot] then return end
 
 	-- Key selection wins until the mouse leaves the deadzone again
 	stickX, stickY = 0.0, 0.0

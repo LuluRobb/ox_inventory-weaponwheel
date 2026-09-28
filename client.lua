@@ -5,6 +5,7 @@ require 'modules.interface.client'
 
 local Utils = require 'modules.utils.client'
 local Weapon = require 'modules.weapon.client'
+local WeaponWheel = require 'modules.weaponwheel.client'
 local currentWeapon
 
 exports('getCurrentWeapon', function()
@@ -847,7 +848,7 @@ local function registerCommands()
 		description = locale('reload_weapon'),
 		defaultKey = 'r',
 		onPressed = function(self)
-			if not currentWeapon or EnableWeaponWheel or not canUseItem(true) then return end
+			if not currentWeapon or EnableWeaponWheel or WeaponWheel.isOpen() or not canUseItem(true) then return end
 
 			if currentWeapon.ammo then
 				if currentWeapon.metadata.durability > 0 then
@@ -863,14 +864,19 @@ local function registerCommands()
 		end
 	})
 
-	local WeaponWheel = require 'modules.weaponwheel.client'
+	-- Same conditions as the hotkeys and item use, so the wheel only opens when a selection can be equipped
+	local function weaponWheelBlocked()
+		return not invHotkeys or invOpen or invBusy or EnableWeaponWheel or not PlayerData.loaded or PlayerData.dead
+			or PlayerData.cuffed or IsPedCuffed(playerPed) or IsNuiFocused() or IsPauseMenuActive() or lib.progressActive()
+	end
 
 	WeaponWheel.setup({
 		canOpen = function()
-			return not EnableWeaponWheel and invHotkeys and not invOpen and not IsNuiFocused() and not lib.progressActive() and PlayerData.loaded and not PlayerData.dead
+			return not weaponWheelBlocked() and client.player:get('canUseWeapons')
 		end,
-		shouldClose = function()
-			return invOpen or EnableWeaponWheel or IsNuiFocused() or IsPauseMenuActive() or PlayerData.dead or PlayerData.cuffed or IsPedCuffed(playerPed)
+		shouldClose = weaponWheelBlocked,
+		isBusy = function()
+			return not canUseItem() or (currentWeapon and currentWeapon.timer ~= 0)
 		end,
 		getCurrentWeapon = function()
 			return currentWeapon
@@ -1567,7 +1573,8 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 						else currentWeapon.timer = GetGameTimer() + (GetWeaponTimeBetweenShots(currentWeapon.hash) * 1000) + 100 end
 					end
 				elseif currentWeapon.throwable then
-					if not invBusy and IsControlPressed(0, 24) then
+					-- The wheel blocks the throw itself, the click must not start it either
+					if not invBusy and not WeaponWheel.isOpen() and IsControlPressed(0, 24) then
 						invBusy = 1
 
 						CreateThread(function()

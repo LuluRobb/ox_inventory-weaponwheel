@@ -42,8 +42,11 @@ const pos = (r: number, deg: number): React.CSSProperties => {
   return { left: `${(x + 300) / 6}%`, top: `${(y + 300) / 6}%` };
 };
 
+// No segment, used for "nothing selected" and weapons outside slots 1-5
+const NONE = -1;
+
 // Lua uses slot numbers with 0 = fist, the wheel uses segment indices
-const slotToIndex = (slot?: number | null) => (slot && slot >= 1 && slot <= 5 ? slot - 1 : FIST);
+const slotToIndex = (slot?: number | null) => (slot === 0 ? FIST : slot && slot >= 1 && slot <= 5 ? slot - 1 : NONE);
 
 const FistIcon: React.FC = () => (
   <svg
@@ -85,12 +88,14 @@ const OCCUPIED = 'occupied';
 
 type WheelEntry = WheelItem | typeof OCCUPIED | null;
 
-interface OpenData {
-  equipped?: number;
-  hovered?: number;
-  weapons?: boolean[];
+interface SlotState {
   blocked?: boolean[];
   capacity?: number[];
+}
+
+interface OpenData extends SlotState {
+  equipped?: number;
+  hovered?: number;
   ammo?: number;
 }
 
@@ -98,40 +103,44 @@ interface OpenData {
 const WeaponWheel: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(FIST);
-  const [equipped, setEquipped] = useState<number | null>(null);
+  // Slot number of the current weapon, 0 = unarmed
+  const [equipped, setEquipped] = useState(0);
   const [liveAmmo, setLiveAmmo] = useState<number | null>(null);
-  const [weaponSlots, setWeaponSlots] = useState<boolean[]>([]);
   // Weapons that can not be used on the current vehicle seat, shown greyed out and skipped
   const [blockedSlots, setBlockedSlots] = useState<boolean[]>([]);
   const [capacities, setCapacities] = useState<number[]>([]);
   const inventoryItems = useAppSelector(selectLeftInventory).items;
 
-  useNuiEvent<OpenData>('openWeaponWheel', (data) => {
-    const current = data?.equipped && data.equipped >= 1 && data.equipped <= 5 ? data.equipped : null;
-    setEquipped(current);
-    setLiveAmmo(typeof data?.ammo === 'number' ? data.ammo : null);
-    // Lua array arrives as json array, index 0 = slot 1
-    setWeaponSlots(Array.isArray(data?.weapons) ? data.weapons : []);
+  // Lua arrays arrive as json arrays, index 0 = slot 1
+  const setSlotState = (data?: SlotState) => {
     setBlockedSlots(Array.isArray(data?.blocked) ? data.blocked : []);
     // Max clip size per slot incl. attached clip components, read from the game in Lua
     setCapacities(Array.isArray(data?.capacity) ? data.capacity : []);
-    setHovered(slotToIndex(data?.hovered ?? current));
+  };
+
+  useNuiEvent<OpenData>('openWeaponWheel', (data) => {
+    setEquipped(data?.equipped ?? 0);
+    setLiveAmmo(typeof data?.ammo === 'number' ? data.ammo : null);
+    setSlotState(data);
+    setHovered(slotToIndex(data?.hovered));
     setOpen(true);
   });
 
   useNuiEvent<number>('weaponWheelHover', (slot) => setHovered(slotToIndex(slot)));
 
-  // Sent when the player enters, leaves or switches seats while the wheel is open
-  useNuiEvent<boolean[]>('weaponWheelBlocked', (blocked) => setBlockedSlots(Array.isArray(blocked) ? blocked : []));
+  // Sent when the inventory or the vehicle seat changes while the wheel is open
+  useNuiEvent<SlotState>('weaponWheelUpdate', setSlotState);
 
   useNuiEvent('closeWeaponWheel', () => setOpen(false));
 
   const getEntry = (index: number): WheelEntry => {
     const slot = inventoryItems.find((item) => item.slot === index + 1);
     if (!slot || !isSlotWithItem(slot)) return null;
-    if (!weaponSlots[index]) return OCCUPIED;
 
+    // Read from the live inventory, same check as isWeaponSlot in Lua
     const data = Items[slot.name];
+    if (!data?.weapon) return OCCUPIED;
+
     const label = slot.metadata?.label || data?.label || slot.name;
     const ammoName = data?.ammoName;
 
@@ -198,6 +207,7 @@ const WeaponWheel: React.FC = () => {
   };
 
   const renderInfo = () => {
+    if (hovered === NONE) return null;
     if (hovered === FIST) return <div className="ww-name">{fistLabel}</div>;
 
     const entry = entries[hovered];
