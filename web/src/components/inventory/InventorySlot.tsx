@@ -176,7 +176,7 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
             </div>
           </div>
           <div>
-            {inventoryType !== 'shop' && item?.durability !== undefined && !Items[item.name]?.weapon && (
+            {inventoryType !== 'shop' && item?.durability !== undefined && (
               <WeightBar percent={item.durability} durability />
             )}
             {inventoryType === 'shop' && item?.price !== undefined && (
