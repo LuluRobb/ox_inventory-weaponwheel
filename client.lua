@@ -863,14 +863,33 @@ local function registerCommands()
 		end
 	})
 
+	local WeaponWheel = require 'modules.weaponwheel.client'
+
+	WeaponWheel.setup({
+		canOpen = function()
+			return not EnableWeaponWheel and invHotkeys and not invOpen and not IsNuiFocused() and not lib.progressActive() and PlayerData.loaded and not PlayerData.dead
+		end,
+		shouldClose = function()
+			return invOpen or EnableWeaponWheel or IsNuiFocused() or IsPauseMenuActive() or PlayerData.dead or PlayerData.cuffed or IsPedCuffed(playerPed)
+		end,
+		getCurrentWeapon = function()
+			return currentWeapon
+		end,
+		useSlot = useSlot,
+		disarm = function()
+			if not currentWeapon or currentWeapon.timer ~= 0 or not canUseItem() then return end
+
+			currentWeapon = Weapon.Disarm(currentWeapon)
+		end,
+	})
+
+	-- Keeps the 'hotbar' keybind name so existing player bindings stay valid
 	lib.addKeybind({
 		name = 'hotbar',
-		description = locale('disable_hotbar'),
+		description = locale('weapon_wheel'),
 		defaultKey = client.keys[3],
-		onPressed = function()
-			if EnableWeaponWheel or not invHotkeys or IsNuiFocused() or lib.progressActive() then return end
-			SendNUIMessage({ action = 'toggleHotbar' })
-		end
+		onPressed = WeaponWheel.open,
+		onReleased = WeaponWheel.release
 	})
 
 	for i = 1, 5 do
@@ -879,6 +898,7 @@ local function registerCommands()
 			description = locale('use_hotbar', i),
 			defaultKey = tostring(i),
 			onPressed = function()
+				if WeaponWheel.isOpen() then return WeaponWheel.hover(i) end
 				if invOpen or EnableWeaponWheel or not invHotkeys or IsNuiFocused() then return end
 				useSlot(i)
 			end
@@ -1240,7 +1260,8 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 			description = v.description,
 			buttons = buttons,
 			ammoName = v.ammoname,
-			image = v.client?.image
+			image = v.client?.image,
+			weapon = v.weapon
 		}
 	end
 

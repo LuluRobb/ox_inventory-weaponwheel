@@ -51,7 +51,7 @@ const SlotTooltip: React.ForwardRefRenderFunction<
           )}
           {inventoryType !== 'crafting' ? (
             <>
-              {item.durability !== undefined && (
+              {item.durability !== undefined && !itemData.weapon && (
                 <p>
                   {Locale.ui_durability}: {Math.trunc(item.durability)}
                 </p>

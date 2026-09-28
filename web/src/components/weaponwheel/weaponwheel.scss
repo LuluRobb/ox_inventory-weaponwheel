@@ -1,0 +1,355 @@
+// Weapon wheel, based on design/weaponwheel.html
+// Sizes use --ww-u (1% of the wheel width) instead of container query units for older CEF builds.
+
+@function u($n) {
+  @return calc(var(--ww-u) * #{$n});
+}
+
+.weapon-wheel {
+  --ww-seg: rgba(16, 17, 23, 0.74);
+  --ww-seg-empty: rgba(16, 17, 23, 0.5);
+  --ww-seg-stroke: rgba(255, 255, 255, 0.1);
+  --ww-seg-active: rgba(119, 0, 166, 0.34);
+  --ww-seg-active-stroke: #a33fd6;
+  --ww-center: rgba(10, 11, 15, 0.86);
+  --ww-text: #e8e9ec;
+  --ww-muted: #8b8f99;
+  --ww-faint: #555a66;
+  --ww-accent: #7700a6;
+  --ww-font: 'Roboto', system-ui, sans-serif;
+  --ww-font-cond: 'Roboto Condensed', 'Roboto', system-ui, sans-serif;
+
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  font-family: var(--ww-font);
+  color: var(--ww-text);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+
+  * {
+    box-sizing: border-box;
+  }
+
+  .ww-dim {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.65) 75%);
+    opacity: 0;
+    transition: opacity 160ms ease;
+  }
+
+  .ww-stage {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+  }
+
+  .ww-wheel {
+    --ww-size: min(744px, 92vw, 90vh);
+    --ww-u: calc(var(--ww-size) / 100);
+    position: relative;
+    width: var(--ww-size);
+    height: var(--ww-size);
+    opacity: 0;
+    transform: scale(0.94);
+    transition:
+      opacity 140ms ease,
+      transform 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+
+  &.open {
+    .ww-dim {
+      opacity: 1;
+    }
+
+    .ww-wheel {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .ww-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .ww-seg {
+    path.ww-body {
+      fill: var(--ww-seg);
+      stroke: var(--ww-seg-stroke);
+      stroke-width: 1;
+      transition:
+        fill 90ms ease,
+        stroke 90ms ease;
+    }
+
+    path.ww-rim {
+      fill: transparent;
+      transition: fill 90ms ease;
+      pointer-events: none;
+    }
+
+    &.empty path.ww-body {
+      fill: var(--ww-seg-empty);
+    }
+
+    &.hover path.ww-body {
+      fill: var(--ww-seg-active);
+      stroke: var(--ww-seg-active-stroke);
+      stroke-width: 1.5;
+    }
+
+    &.hover path.ww-rim {
+      fill: var(--ww-accent);
+    }
+
+    &.equipped:not(.hover) path.ww-rim {
+      fill: rgba(255, 255, 255, 0.35);
+    }
+  }
+
+  .ww-center-disc {
+    fill: var(--ww-center);
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 1;
+  }
+
+  .ww-center-ring {
+    fill: none;
+    stroke: rgba(163, 63, 214, 0.4);
+    stroke-width: 1;
+    stroke-dasharray: 2 6;
+  }
+
+  // Labels positioned on top of the svg segments
+  .ww-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: u(30);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: u(0.6);
+    pointer-events: none;
+    transition: transform 120ms ease;
+
+    &.hover {
+      transform: translate(-50%, -50%) scale(1.06);
+    }
+
+    .ww-icon {
+      width: u(19);
+      height: u(12);
+      display: grid;
+      place-items: center;
+
+      img {
+        width: u(19);
+        height: u(12);
+        object-fit: contain;
+        filter: drop-shadow(0 u(0.4) u(0.8) rgba(0, 0, 0, 0.6));
+        opacity: 0.9;
+      }
+
+      svg {
+        width: u(8.5);
+        height: u(8.5);
+        color: var(--ww-text);
+        opacity: 0.85;
+      }
+    }
+
+    &.hover .ww-icon img,
+    &.hover .ww-icon svg {
+      opacity: 1;
+    }
+
+    .ww-fallback {
+      font-family: var(--ww-font-cond);
+      font-weight: 700;
+      font-size: u(2.2);
+      letter-spacing: 0.08em;
+      color: var(--ww-muted);
+    }
+
+    .ww-ammo {
+      font-family: var(--ww-font-cond);
+      font-weight: 700;
+      font-size: u(2.5);
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+
+      span {
+        color: var(--ww-muted);
+        font-weight: 500;
+      }
+    }
+
+    .ww-empty-text {
+      font-family: var(--ww-font-cond);
+      font-weight: 500;
+      font-size: u(2.3);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ww-faint);
+    }
+
+    .ww-empty-icon {
+      width: u(7);
+      height: u(7);
+      border-radius: 50%;
+      border: u(0.3) dashed var(--ww-faint);
+    }
+
+    // Weapon not usable on the current vehicle seat
+    &.blocked {
+      .ww-icon img {
+        filter: grayscale(1) brightness(0.6);
+        opacity: 0.35;
+      }
+
+      .ww-fallback,
+      .ww-ammo,
+      .ww-ammo span {
+        color: var(--ww-faint);
+      }
+    }
+  }
+
+  .ww-slotno {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    width: u(4);
+    height: u(4);
+    display: grid;
+    place-items: center;
+    font-family: var(--ww-font-cond);
+    font-weight: 700;
+    font-size: u(2.1);
+    color: var(--ww-muted);
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 50%;
+    transition:
+      color 90ms ease,
+      background 90ms ease,
+      border-color 90ms ease;
+
+    &.hover {
+      color: #fff;
+      background: var(--ww-accent);
+      border-color: var(--ww-accent);
+    }
+
+    &.blocked {
+      color: var(--ww-faint);
+    }
+  }
+
+  // Center info panel
+  .ww-info {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: u(38);
+    text-align: center;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .ww-name {
+      font-family: var(--ww-font-cond);
+      font-weight: 700;
+      font-size: u(3.6);
+      line-height: 1.1;
+      max-width: u(30);
+
+      &.muted {
+        color: var(--ww-muted);
+      }
+    }
+
+    .ww-ammo {
+      margin-top: u(1.6);
+      font-family: var(--ww-font-cond);
+      font-weight: 700;
+      font-size: u(5);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+
+      span {
+        font-size: u(2.8);
+        color: var(--ww-muted);
+        font-weight: 500;
+      }
+    }
+
+    // Fixed tile size, wraps after 3 tiles per row (last row centered)
+    .ww-comps {
+      --ww-tile: #{u(6.4)};
+      --ww-gap: #{u(0.8)};
+      margin-top: u(1.8);
+      max-width: calc(var(--ww-tile) * 3 + var(--ww-gap) * 2);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--ww-gap);
+    }
+
+    .ww-comp-tile {
+      width: var(--ww-tile);
+      height: var(--ww-tile);
+      display: grid;
+      place-items: center;
+      border-radius: calc(var(--ww-tile) * 0.18);
+      animation: ww-comp-in 180ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.1), transparent 70%), rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow:
+        0 0 u(1.2) rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+      @for $i from 2 through 5 {
+        &:nth-child(#{$i}) {
+          animation-delay: #{($i - 1) * 40}ms;
+        }
+      }
+
+      img {
+        width: calc(var(--ww-tile) * 0.82);
+        height: calc(var(--ww-tile) * 0.82);
+        object-fit: contain;
+        filter: drop-shadow(0 u(0.3) u(0.5) rgba(0, 0, 0, 0.6));
+      }
+    }
+  }
+}
+
+@keyframes ww-comp-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--ww-u) * 0.8)) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weapon-wheel,
+  .weapon-wheel * {
+    transition: none !important;
+  }
+}
